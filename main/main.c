@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "esp_log.h"
 #include "ml8511.h"
-#include "bmp280.h"
+#include "bmp280_i2c.h"
 #include "dht22.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -11,7 +11,7 @@
 float uvValue;
 static const char TAG[] = "weather monitor";
 
-void readUV(void *pvParameters){
+static void readUV(void *pvParameters){
     char buffer[15];
     ml8511_init(ADC_UNIT_1, ADC_CHANNEL_7);
     for(;;){
