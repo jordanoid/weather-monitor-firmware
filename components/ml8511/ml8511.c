@@ -1,12 +1,21 @@
 #include "esp_log.h"
 #include "ml8511.h"
+#include "esp_adc/adc_oneshot.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
 
-static const char TAG[] = "weather monitor";
+
+// static const char TAG[] = "weather monitor";
 
 adc_oneshot_unit_handle_t handle;
 adc_cali_handle_t cali_handle;
+ml8511_channel_t sensor_channel;
+
 
 void ml8511_init (adc_unit_t unit, adc_channel_t channel){
+
+    sensor_channel = channel;
 
     adc_oneshot_unit_init_cfg_t init_config = {
         .unit_id = unit,
@@ -28,34 +37,19 @@ void ml8511_init (adc_unit_t unit, adc_channel_t channel){
     ESP_ERROR_CHECK(adc_cali_create_scheme_line_fitting(&cali_config, &cali_handle));
 };
 
-void get_uv_intensity(adc_channel_t channel, float *data){
+void get_uv_intensity(float *data){
     int adc_val;
     int voltage; //in mV
-    char buffer[15];
-    ESP_ERROR_CHECK(adc_oneshot_read(handle, channel, &adc_val));
+    // char buffer[15];
 
-    //Logger
-    sprintf(buffer, "ADC Val: %d", adc_val);
-    esp_log_buffer_char(TAG, buffer, sizeof(buffer)/sizeof(char));
+    ESP_ERROR_CHECK(adc_oneshot_read(handle, sensor_channel, &adc_val));
 
-
-   adc_cali_raw_to_voltage(cali_handle, adc_val, &voltage);
-
-
-    //Logger
-    sprintf(buffer, "Voltage: %d", voltage);
-    esp_log_buffer_char(TAG, buffer, sizeof(buffer)/sizeof(char));
-
-    
-
-    if( voltage == 0){
-        *data = -1;
-    }else{
-        if(voltage < 990){
-            voltage = 990;
-        }else if(voltage > 2800){
-            voltage = 2800;
-        }
-        *data = (((float)voltage - 990) / (2800 - 990)) *  15; 
+    adc_cali_raw_to_voltage(cali_handle, adc_val, &voltage);
+ 
+    if(voltage < 990){
+        voltage = 990;
+    }else if(voltage > 2800){
+        voltage = 2800;
     }
+    *data = (((float)voltage - 990) / (2800 - 990)) *  15; 
 };

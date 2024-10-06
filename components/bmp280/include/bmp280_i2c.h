@@ -1,58 +1,97 @@
 #ifndef __BMP280_I2C_H__
 #define __BMP280_I2C_H__
 
-#include "driver/i2c_master.h"
+#define DEFAULT_CHIP_ID    0X58
+#define RESET_VALUE        0XB6
 
-#define BMP280_DEFAULT_CHIP_ID    0X58
-#define BMP280_RESET_VALUE        0XB6
+#define ID_ADDRESS			0XD0
+#define RESET_ADDRESS		0XE0
+#define STATUS_ADDRESS		0XF3
+#define CTRL_MEAS_ADDRESS	0XF4
+#define CONFIG_ADDRESS		0XF5
+#define PRESSURE_MSB		0xF7
+#define PRESSURE_LSB		0xF8
+#define PRESSURE_XLSB		0xF9
+#define TEMP_MSB			0xFA
+#define TEMP_LSB			0xFB
+#define TEMP_XLSB			0xFC
 
-#define SEA_LEVEL_PRESSURE        101325
+#define MODE_REG			0X00
+#define OSRS_P_REG			0X02
+#define OSRS_T_REG			0X05
+#define FILTER_REG			0X02
+#define T_SB_REG			0X05
 
-#define ID_ADDRESS                0XD0
-#define RESET_ADDRESS             0XE0
-#define STATUS_ADDRESS            0XF3
-#define CTRL_MEAS_ADDRESS         0XF4
-#define CONFIG_ADDRESS            0XF5
-#define PRESSURE_MSB              0xF7
-#define PRESSURE_LSB              0xF8
-#define PRESSURE_XLSB             0xF9
-#define TEMP_MSB                  0xFA
-#define TEMP_LSB                  0xFB
-#define TEMP_XLSB                 0xFC
+#define CALIB_LO_REG		0x88
+#define CALIB_HI_REG		0x9F
 
-#define IM_UPDATE_BIT             0X00
-#define MEASURING_BIT             0X01
-#define MODE_BIT                  0X00
-#define OSRS_P_BIT                0X02
-#define OSRS_T_BIT                0X05
-#define SPI3W_EN_BIT              0X00
-#define FILTER_BIT                0X02
-#define T_SB_BIT                  0X05
+typedef enum {
+	STANDBY_0M5,
+    STANDBY_62M5,
+    STANDBY_125M,
+    STANDBY_250M,
+    STANDBY_500M,
+    STANDBY_1000M,
+	STANDBY_2000M,
+	STANDBY_4000M,
+} bmp280_tsby_t;
 
-#define IM_UPDATE_LENGTH          0X01
-#define MEASURING_LENGTH          0X03
-#define MODE_LENGTH               0X02
-#define OSRS_P_LENGTH             0X03
-#define OSRS_T_LENGTH             0X03
-#define SPI3W_EN_LENGTH           0X01
-#define FILTER_LENGTH             0X03
-#define T_SB_LENGTH               0X03
+typedef enum {
+	SLEEP_MODE = 0,
+	FORCED_MODE = 1,
+	NORMAL_MODE = 3,
+} bmp280_mode_t;
 
-#define T1_ADDRESS                0X88
-#define T2_ADDRESS                0X8A
-#define T3_ADDRESS                0X8C
-#define P1_ADDRESS                0X8E
-#define P2_ADDRESS                0X90
-#define P3_ADDRESS                0X92
-#define P4_ADDRESS                0X94
-#define P5_ADDRESS                0X96
-#define P6_ADDRESS                0X98
-#define P7_ADDRESS                0X9A
-#define P8_ADDRESS                0X9C
-#define P9_ADDRESS                0X9E
+typedef enum {
+	OVERSAMPLING_OFF,
+	OVERSAMPLING_X1,
+	OVERSAMPLING_X2,
+	OVERSAMPLING_X4,
+	OVERSAMPLING_X8,
+	OVERSAMPLING_X16,
+} bmp280_osrs_t;
+
+typedef enum {
+	IIR_NONE,
+	IIR_X1,
+	IIR_X2,
+	IIR_X4,
+	IIR_X8,
+	IIR_X16,
+} bmp280_iirf_t;
+
+typedef struct {
+	uint16_t T1;
+	int16_t T2;
+	int16_t T3;
+	uint16_t P1;
+	int16_t P2;
+	int16_t P3;
+	int16_t P4;
+	int16_t P5;
+	int16_t P6;
+	int16_t P7;
+	int16_t P8;
+	int16_t P9;
+} bmp280_calib_t;
+
+typedef struct {
+	bmp280_tsby_t t_sdby;
+	bmp280_iirf_t filter;
+} bmp280_config_t;
+
+typedef struct {
+	bmp280_osrs_t t_oversampling;
+	bmp280_osrs_t p_oversampling;
+	bmp280_mode_t mode;
+} bmp280_ctrl_meas_t;
 
 void i2c_master_init(uint8_t SCL_IO_PIN, uint8_t SDA_IO_PIN);
 
-void bmp280_i2c_init(void);
+void bmp280_i2c_init(bmp280_config_t *cfg, bmp280_ctrl_meas_t *ctrl);
+
+void bmp280_get_temp(float *temp);
+
+void bmp280_get_pressure(float *pressure);
 
 #endif
