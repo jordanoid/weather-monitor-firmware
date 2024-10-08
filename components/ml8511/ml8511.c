@@ -5,12 +5,9 @@
 #include "freertos/task.h"
 #include "freertos/semphr.h"
 
-
-// static const char TAG[] = "weather monitor";
-
 adc_oneshot_unit_handle_t handle;
 adc_cali_handle_t cali_handle;
-ml8511_channel_t sensor_channel;
+adc_channel_t sensor_channel;
 
 
 void ml8511_init (adc_unit_t unit, adc_channel_t channel){
@@ -40,7 +37,6 @@ void ml8511_init (adc_unit_t unit, adc_channel_t channel){
 void get_uv_intensity(float *data){
     int adc_val;
     int voltage; //in mV
-    // char buffer[15];
 
     ESP_ERROR_CHECK(adc_oneshot_read(handle, sensor_channel, &adc_val));
 
