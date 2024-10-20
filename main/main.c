@@ -12,20 +12,22 @@ bmp280_ctrl_meas_t bmp280_ctrl_meas;
 
 SemaphoreHandle_t xBinarySemaphore;
 
-float uvValue, temp, pressure;
+float uvValue, temp, pressure, dht_temp, dht_rh;
 
 static const char TAG[] = "weather monitor";
 
 static void bmp280_task(void *pvParameters);
 static void ml8511_task(void *pvParameters);
+static void dht22_task(void *pvParameters);
 
 void app_main(void)
 {  
     ESP_LOGI(TAG, "Test Main");
     xBinarySemaphore = xSemaphoreCreateBinary();
     xSemaphoreGive(xBinarySemaphore);
-    xTaskCreatePinnedToCore(ml8511_task, "UV Sensor Read", 4096, NULL, 0, NULL, 0);
-    xTaskCreatePinnedToCore(bmp280_task, "BMP280 Read", 4096, NULL, 0, NULL, 0);
+    // xTaskCreatePinnedToCore(ml8511_task, "UV Sensor Read", 4096, NULL, 0, NULL, 0);
+    // xTaskCreatePinnedToCore(bmp280_task, "BMP280 Read", 4096, NULL, 0, NULL, 0);
+    xTaskCreatePinnedToCore(dht22_task, "DHT22 Read", 4096, NULL, 0, NULL, 0);
 }
 
 static void bmp280_task(void *pvParameters){
@@ -44,7 +46,7 @@ static void bmp280_task(void *pvParameters){
 
     for(;;){
 
-        if( xSemaphoreTake( xBinarySemaphore, ( TickType_t ) 10 ) == pdTRUE ){
+        if( xSemaphoreTake(xBinarySemaphore, (TickType_t)10) == pdTRUE){
             bmp280_get_temp(&temp);
             bmp280_get_pressure(&pressure);
             xSemaphoreGive(xBinarySemaphore);
@@ -59,12 +61,14 @@ static void bmp280_task(void *pvParameters){
 }
 
 static void ml8511_task(void *pvParameters){
+    
     ml8511_init(ADC_UNIT_1, ADC_CHANNEL_7);
+
     char buffer[15];
 
     for(;;){
 
-        if( xSemaphoreTake( xBinarySemaphore, ( TickType_t ) 10 ) == pdTRUE ){
+        if(xSemaphoreTake(xBinarySemaphore, (TickType_t)10) == pdTRUE ){
             get_uv_intensity(&uvValue);
             xSemaphoreGive(xBinarySemaphore);
         }
@@ -72,5 +76,30 @@ static void ml8511_task(void *pvParameters){
         esp_log_buffer_char(TAG, buffer, sizeof(buffer)/sizeof(char));
 
         vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+}
+
+static void dht22_task(void *pvParameters){
+    dht_err_t ret = 0;
+
+    dht22_set_pin(GPIO_NUM_13);
+  
+    char buffer[25];  // Increased size to fit longer messages
+
+    for(;;){
+        ret = dht22_read(&dht_temp, &dht_rh);  // No semaphore used for DHT22
+
+        if (ret == DHT_OK) {
+            sprintf(buffer, "T: %.2f C, RH: %.2f", dht_temp, dht_rh);
+            esp_log_buffer_char(TAG, buffer, sizeof(buffer)/sizeof(char));
+        } else if (ret == DHT_ERR_TIMEOUT) {
+            sprintf(buffer, "DHT ERR TIMEOUT");
+            esp_log_buffer_char(TAG, buffer, sizeof(buffer)/sizeof(char));
+        } else if (ret == DHT_ERR_CHECKSUM) {
+            sprintf(buffer, "DHT ERR CHECKSUM");
+            esp_log_buffer_char(TAG, buffer, sizeof(buffer)/sizeof(char));
+        }
+
+        vTaskDelay(2000 / portTICK_PERIOD_MS);  // Delay between reads
     }
 }
