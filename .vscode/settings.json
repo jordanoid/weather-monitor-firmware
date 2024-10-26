@@ -16,6 +16,7 @@
     "idf.toolsPathWin": "C:\\Espressif",
     "idf.flashType": "UART",
     "files.associations": {
-        "adc_oneshot.h": "c"
+        "adc_oneshot.h": "c",
+        "cjson.h": "c"
     }
 }

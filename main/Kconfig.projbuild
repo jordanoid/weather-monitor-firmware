@@ -1,0 +1,16 @@
+menu "Wi-Fi Configuration"
+
+    config WIFI_SSID
+        string "Wi-Fi SSID"
+        default "your_ssid"
+        help
+            Set the Wi-Fi SSID for the project.
+    
+    config WIFI_PASS
+        string "Wi-Fi Password"
+        default "your_password"
+        help
+            Set the Wi-Fi password for the project.
+    
+endmenu
+    
