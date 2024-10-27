@@ -34,18 +34,29 @@ void ml8511_init (adc_unit_t unit, adc_channel_t channel){
     ESP_ERROR_CHECK(adc_cali_create_scheme_line_fitting(&cali_config, &cali_handle));
 };
 
-void get_uv_intensity(float *data){
+void get_uv_intensity(float *data) {
     int adc_val;
-    int voltage; //in mV
+    int voltage;
+    int total_voltage = 0;
+    int voltage_buffer[30];
 
-    ESP_ERROR_CHECK(adc_oneshot_read(handle, sensor_channel, &adc_val));
+    for (int i = 0; i < 30; i++) {
+        ESP_ERROR_CHECK(adc_oneshot_read(handle, sensor_channel, &adc_val));
+        adc_cali_raw_to_voltage(cali_handle, adc_val, &voltage);
+        
+        if (voltage < 990) {
+            voltage = 990;
+        } else if (voltage > 2800) {
+            voltage = 2800;
+        }
 
-    adc_cali_raw_to_voltage(cali_handle, adc_val, &voltage);
- 
-    if(voltage < 990){
-        voltage = 990;
-    }else if(voltage > 2800){
-        voltage = 2800;
+        voltage_buffer[i] = voltage;
     }
-    *data = (((float)voltage - 990) / (2800 - 990)) *  15; 
-};
+
+    for (int i = 0; i < 30; i++) {
+        total_voltage += voltage_buffer[i];
+    }
+    voltage = total_voltage / 30;
+
+    *data = (((float)voltage - 990) / (2800 - 990)) * 15;
+}
