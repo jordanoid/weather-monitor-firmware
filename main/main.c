@@ -21,6 +21,7 @@ esp_mqtt_client_handle_t mqtt_client;
 float uvValue, bmp280_temp, bmp280_pressure, dht_temp, dht_rh;
 
 static const char TAG[] = "weather monitor";
+static const char loc[] = "Cempaka Putih";
 
 static void wifi_init_sta(void);
 static void mqtt_client_init(void);
@@ -50,7 +51,7 @@ void app_main(void)
     xTaskCreatePinnedToCore(bmp280_task, "BMP280 Read", 4096, NULL, 0, NULL, 0);
     xTaskCreatePinnedToCore(dht22_task, "DHT22 Read", 4096, NULL, 0, NULL, 0);
 
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
 
     xTaskCreatePinnedToCore(mqtt_pub_task, "MQTT Pub", 4096, NULL, 0, NULL, 1);
 }
@@ -121,6 +122,7 @@ static void mqtt_pub_task(void *pvParameters){
         cJSON_AddNumberToObject(json, "bmp280_temp", (double)bmp280_temp);
         cJSON_AddNumberToObject(json, "dht22_rh", (double)dht_rh);
         cJSON_AddNumberToObject(json, "dht22_temp", (double)dht_temp);
+        cJSON_AddStringToObject(json, "location", loc);
 
         char *json_string = cJSON_Print(json);
         esp_mqtt_client_publish(mqtt_client, "weather/sensor_readings", json_string, 0, 1, 1);
